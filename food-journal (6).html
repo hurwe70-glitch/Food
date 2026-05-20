@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مطبخنا</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Playfair+Display:ital@0;1&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+:root{--cream:#fdf8f0;--cream2:#f5ede0;--brown:#3d2b1f;--brown2:#6b4c3b;--gold:#c8963e;--gold2:#e8b55a;--red:#8b2e2e;--muted:#7a5c4a;--border:#d4b896;--text:#2a1a12;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Naskh Arabic',serif;background:var(--cream);color:var(--text);min-height:100vh;}
+.hdr{background:var(--brown);position:sticky;top:0;z-index:50;box-shadow:0 2px 16px rgba(0,0,0,.3);}
+.hdr-in{max-width:1100px;margin:0 auto;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo-ic{width:40px;height:40px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.logo h1{font-size:18px;font-weight:700;color:var(--cream);line-height:1.2;}
+.logo p{font-size:11px;color:var(--gold2);}
+.hdr-btns{display:flex;gap:8px;align-items:center;flex-shrink:0;}
+.btn-add{background:var(--gold);color:var(--brown);border:none;border-radius:8px;padding:10px 18px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;display:none;}
+.btn-add:hover{background:var(--gold2);}
+.btn-login{background:transparent;color:var(--cream2);border:1px solid rgba(255,255,255,.3);border-radius:8px;padding:10px 16px;font-family:inherit;font-size:13px;cursor:pointer;}
+.btn-login:hover{border-color:var(--gold);color:var(--gold2);}
+.hero{background:var(--brown);padding:44px 20px 36px;text-align:center;}
+.hero h2{font-family:'Playfair Display',serif;font-size:clamp(22px,5vw,42px);font-style:italic;color:var(--cream);margin-bottom:8px;}
+.hero p{color:var(--gold2);font-size:14px;}
+.stats{display:flex;justify-content:center;gap:36px;margin-top:24px;flex-wrap:wrap;}
+.stat-num{font-size:26px;font-weight:700;color:var(--gold);}
+.stat-lbl{font-size:11px;color:var(--cream2);margin-top:2px;}
+.flt-wrap{background:var(--cream2);border-bottom:1px solid var(--border);padding:10px 20px;position:sticky;top:68px;z-index:40;}
+.flt-in{max-width:1100px;margin:0 auto;display:flex;gap:7px;flex-wrap:wrap;align-items:center;}
+.chip{background:white;border:1px solid var(--border);border-radius:20px;padding:5px 14px;font-family:inherit;font-size:12px;color:var(--muted);cursor:pointer;transition:all .15s;}
+.chip:hover{border-color:var(--gold);color:var(--brown);}
+.chip.active{background:var(--brown);color:var(--cream);border-color:var(--brown);}
+.srch{margin-right:auto;}
+.srch input{background:white;border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-family:inherit;font-size:12px;color:var(--text);width:180px;outline:none;}
+.srch input:focus{border-color:var(--gold);}
+.main{max-width:1100px;margin:0 auto;padding:28px 20px;}
+.sec-lbl{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.8px;margin-bottom:18px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px;}
+.card{background:white;border-radius:14px;overflow:hidden;border:1px solid var(--border);cursor:pointer;transition:transform .2s,box-shadow .2s;animation:fi .35s ease;}
+.card:hover{transform:translateY(-3px);box-shadow:0 10px 32px rgba(61,43,31,.14);}
+@keyframes fi{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.card-img{height:190px;background:var(--cream2);display:flex;align-items:center;justify-content:center;font-size:60px;position:relative;overflow:hidden;}
+.card-img img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;}
+.card-badge{position:absolute;top:10px;right:10px;background:var(--brown);color:var(--cream);font-size:10px;padding:3px 10px;border-radius:10px;font-weight:600;}
+.card-5{position:absolute;top:10px;left:10px;background:rgba(200,150,62,.95);color:white;font-size:11px;padding:3px 8px;border-radius:10px;}
+.card-body{padding:16px;}
+.card-name{font-size:17px;font-weight:700;color:var(--brown);margin-bottom:6px;line-height:1.4;}
+.card-prev{font-size:12px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;line-height:1.6;margin-bottom:10px;}
+.card-foot{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted);}
+.stars{color:var(--gold);letter-spacing:1px;font-size:13px;}
+.empty{grid-column:1/-1;text-align:center;padding:70px 20px;color:var(--muted);}
+.empty .ei{font-size:56px;margin-bottom:14px;}
+.empty h3{font-size:18px;color:var(--brown2);margin-bottom:6px;}
+.loading{grid-column:1/-1;text-align:center;padding:60px;color:var(--muted);}
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px);}
+.ov.open{display:flex;}
+.modal{background:var(--cream);border-radius:18px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;animation:su .25s ease;}
+@keyframes su{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.mhdr{padding:20px 24px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--cream);z-index:1;border-radius:18px 18px 0 0;}
+.mhdr h2{font-size:18px;font-weight:700;color:var(--brown);}
+.mclose{background:var(--cream2);border:none;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer;color:var(--muted);display:flex;align-items:center;justify-content:center;}
+.mbody{padding:20px 24px;}
+.mfoot{padding:14px 24px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;}
+.fld{margin-bottom:16px;}
+.fld label{display:block;font-size:12px;font-weight:700;color:var(--brown2);margin-bottom:5px;}
+.fld input,.fld textarea,.fld select{width:100%;background:white;border:1.5px solid var(--border);border-radius:10px;padding:10px 13px;font-family:inherit;font-size:14px;color:var(--text);outline:none;resize:vertical;}
+.fld input:focus,.fld textarea:focus,.fld select:focus{border-color:var(--gold);}
+.fld textarea{min-height:90px;}
+.up-area{border:2px dashed var(--border);border-radius:12px;padding:24px;text-align:center;cursor:pointer;color:var(--muted);transition:all .2s;position:relative;overflow:hidden;}
+.up-area:hover{border-color:var(--gold);color:var(--brown2);background:rgba(200,150,62,.04);}
+.up-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.up-area .ui{font-size:28px;margin-bottom:6px;}
+.up-area p{font-size:13px;}
+.prev-wrap{position:relative;margin-top:10px;border-radius:10px;overflow:hidden;}
+.prev-wrap img{width:100%;max-height:200px;object-fit:cover;display:block;}
+.prev-rm{position:absolute;top:6px;left:6px;background:rgba(139,46,46,.9);color:white;border:none;border-radius:50%;width:26px;height:26px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.sp{display:flex;gap:6px;}
+.sp button{background:none;border:none;font-size:28px;cursor:pointer;color:var(--border);transition:color .1s,transform .1s;line-height:1;}
+.sp button:hover{transform:scale(1.15);}
+.sp button.on{color:var(--gold);}
+.btn-save{background:var(--brown);color:var(--cream);border:none;border-radius:10px;padding:11px 24px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;}
+.btn-save:hover{background:var(--brown2);}
+.btn-save:disabled{opacity:.6;cursor:not-allowed;}
+.btn-cnl{background:white;color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:11px 18px;font-family:inherit;font-size:13px;cursor:pointer;}
+.btn-del{background:white;color:var(--red);border:1px solid rgba(139,46,46,.3);border-radius:10px;padding:11px 18px;font-family:inherit;font-size:13px;cursor:pointer;margin-left:auto;}
+.btn-del:hover{background:var(--red);color:white;}
+.v-img{width:100%;max-height:300px;object-fit:cover;border-radius:12px;margin-bottom:18px;}
+.v-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:18px;}
+.v-badge{background:var(--cream2);color:var(--brown2);border:1px solid var(--border);border-radius:20px;padding:3px 13px;font-size:12px;font-weight:600;}
+.v-stars{font-size:18px;color:var(--gold);}
+.v-date{font-size:11px;color:var(--muted);margin-right:auto;}
+.v-sec{margin-bottom:18px;}
+.v-sec-t{font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--border);}
+.v-sec-b{font-size:14px;line-height:1.8;white-space:pre-wrap;}
+.v-notes{background:rgba(200,150,62,.08);border-right:3px solid var(--gold);border-radius:0 10px 10px 0;padding:12px 14px;font-size:14px;line-height:1.7;color:var(--brown2);font-style:italic;white-space:pre-wrap;}
+.login-box{background:var(--cream);border-radius:18px;width:100%;max-width:360px;padding:36px 28px;text-align:center;animation:su .25s ease;}
+.login-box .li{font-size:44px;margin-bottom:14px;}
+.login-box h2{font-size:20px;font-weight:700;color:var(--brown);margin-bottom:6px;}
+.login-box p{font-size:13px;color:var(--muted);margin-bottom:24px;}
+.pin-row{display:flex;gap:8px;justify-content:center;margin-bottom:16px;}
+.pin-row input{width:50px;height:54px;border:2px solid var(--border);border-radius:10px;font-size:20px;font-weight:700;text-align:center;font-family:monospace;color:var(--brown);background:white;outline:none;}
+.pin-row input:focus{border-color:var(--gold);}
+.pin-err{color:#c04040;font-size:13px;margin-bottom:10px;display:none;}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-in">
+    <div class="logo">
+      <div class="logo-ic">🍽️</div>
+      <div>
+        <h1>مطبخنا</h1>
+        <p>دفتر وصفاتنا العائلي</p>
+      </div>
+    </div>
+    <div class="hdr-btns">
+      <button class="btn-add" id="btnAdd" onclick="openAdd()">＋ وصفة جديدة</button>
+      <button class="btn-login" id="btnLogin" onclick="clickLogin()">دخول</button>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <h2>كل أكلة جربناها وأحببناها</h2>
+  <p>محفوظة هنا — نرجعلها متى نبي</p>
+  <div class="stats">
+    <div><div class="stat-num" id="sTotal">0</div><div class="stat-lbl">وصفة مجربة</div></div>
+    <div><div class="stat-num" id="sFive">0</div><div class="stat-lbl">حصلت ٥ نجوم</div></div>
+    <div><div class="stat-num" id="sCats">0</div><div class="stat-lbl">نوع مختلف</div></div>
+  </div>
+</section>
+
+<div class="flt-wrap">
+  <div class="flt-in">
+    <button class="chip active" onclick="setF('all',this)">الكل</button>
+    <button class="chip" onclick="setF('5stars',this)">⭐ خمس نجوم</button>
+    <button class="chip" onclick="setF('عراقي',this)">عراقي</button>
+    <button class="chip" onclick="setF('عربي',this)">عربي</button>
+    <button class="chip" onclick="setF('غربي',this)">غربي</button>
+    <button class="chip" onclick="setF('حلويات',this)">حلويات</button>
+    <button class="chip" onclick="setF('مشاوي',this)">مشاوي</button>
+    <div class="srch"><input type="text" id="srch" placeholder="🔍 ابحث..." oninput="render()"></div>
+  </div>
+</div>
+
+<main class="main">
+  <div class="sec-lbl" id="lbl">جميع الوصفات</div>
+  <div class="grid" id="grid"><div class="loading">⏳ جاري التحميل...</div></div>
+</main>
+
+<!-- ADD MODAL -->
+<div class="ov" id="addOv">
+  <div class="modal">
+    <div class="mhdr">
+      <h2 id="addTitle">وصفة جديدة</h2>
+      <button class="mclose" onclick="closeAll()">×</button>
+    </div>
+    <div class="mbody">
+      <div class="fld"><label>اسم الأكلة *</label><input type="text" id="fName" placeholder="مثال: دولمة بالطماطم"></div>
+      <div class="fld"><label>النوع</label>
+        <select id="fCat">
+          <option>عراقي</option><option>عربي</option><option>غربي</option>
+          <option>حلويات</option><option>مشاوي</option><option>أخرى</option>
+        </select>
+      </div>
+      <div class="fld">
+        <label>صورة الأكلة</label>
+        <div class="up-area">
+          <div class="ui">📷</div>
+          <p>اضغط هنا لاختيار صورة</p>
+          <input type="file" id="fImg" accept="image/*" onchange="pickImg(this)">
+        </div>
+        <div class="prev-wrap" id="prevWrap" style="display:none">
+          <img id="prevImg">
+          <button class="prev-rm" onclick="removeImg(event)">✕</button>
+        </div>
+      </div>
+      <div class="fld"><label>المكونات</label><textarea id="fIng" placeholder="اكتب المكونات..."></textarea></div>
+      <div class="fld"><label>طريقة التحضير</label><textarea id="fSteps" placeholder="اكتب الخطوات..."></textarea></div>
+      <div class="fld"><label>ملاحظاتنا ✨</label><textarea id="fNotes" placeholder="شي خاص لاحظناه..."></textarea></div>
+      <div class="fld"><label>التقييم</label>
+        <div class="sp" id="sp">
+          <button type="button" onclick="rate(1)">★</button>
+          <button type="button" onclick="rate(2)">★</button>
+          <button type="button" onclick="rate(3)">★</button>
+          <button type="button" onclick="rate(4)">★</button>
+          <button type="button" onclick="rate(5)">★</button>
+        </div>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn-del" id="btnDel" onclick="delRecipe()" style="display:none">حذف</button>
+      <button class="btn-cnl" onclick="closeAll()">إلغاء</button>
+      <button class="btn-save" id="btnSave" onclick="saveRecipe()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- VIEW MODAL -->
+<div class="ov" id="viewOv">
+  <div class="modal">
+    <div class="mhdr">
+      <h2 id="vTitle">-</h2>
+      <button class="mclose" onclick="closeAll()">×</button>
+    </div>
+    <div class="mbody" id="vBody"></div>
+    <div class="mfoot" id="vFoot">
+      <button class="btn-cnl" onclick="closeAll()">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN MODAL -->
+<div class="ov" id="loginOv">
+  <div class="login-box">
+    <div class="li">🔑</div>
+    <h2>دخول المطبخ</h2>
+    <p>ادخل كلمة السر</p>
+    <div class="pin-row">
+      <input type="password" maxlength="1" id="p0" oninput="pNext(0)">
+      <input type="password" maxlength="1" id="p1" oninput="pNext(1)">
+      <input type="password" maxlength="1" id="p2" oninput="pNext(2)">
+      <input type="password" maxlength="1" id="p3" oninput="pNext(3)">
+    </div>
+    <div class="pin-err" id="pErr">كلمة السر خاطئة!</div>
+    <button class="btn-save" style="width:100%;margin-bottom:10px" onclick="checkPin()">دخول</button>
+    <button class="btn-cnl" style="width:100%" onclick="closeAll()">إلغاء</button>
+  </div>
+</div>
+
+<script>
+// =============================================
+// 🔥 Firebase Config — بيانات مشروعك
+// =============================================
+const firebaseConfig = {
+  apiKey: "AIzaSyAI6S7AsAD2cTc_P6hUpHHiULFBCeWRNrc",
+  authDomain: "food-f249d.firebaseapp.com",
+  projectId: "food-f249d",
+  storageBucket: "food-f249d.firebasestorage.app",
+  messagingSenderId: "1027414421265",
+  appId: "1:1027414421265:web:c909e6dd1172c38a55a6b0"
+};
+
+// =============================================
+// 🔐 كلمة السر — غيّرها لكلمة خاصة فيكم
+// =============================================
+const PIN = "1234";
+
+// =============================================
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+let recipes = [];
+let currentF = 'all';
+let currentRating = 0;
+let editId = null;
+let imgBase64 = null;
+let isAdmin = false;
+
+// ====== LOAD ======
+function loadRecipes() {
+  db.collection('recipes').orderBy('ts','desc').onSnapshot(snap => {
+    recipes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    render();
+    updateStats();
+  }, err => {
+    console.error('Firebase error:', err);
+    document.getElementById('grid').innerHTML = '<div class="loading">⚠️ خطأ: ' + err.message + '</div>';
+  });
+}
+
+// ====== RENDER ======
+function render() {
+  const q = document.getElementById('srch').value.trim().toLowerCase();
+  let list = recipes;
+  if (currentF === '5stars') list = list.filter(r => r.rating === 5);
+  else if (currentF !== 'all') list = list.filter(r => r.category === currentF);
+  if (q) list = list.filter(r => (r.name||'').toLowerCase().includes(q) || (r.ingredients||'').toLowerCase().includes(q));
+
+  document.getElementById('lbl').textContent =
+    currentF === 'all' ? 'جميع الوصفات (' + list.length + ')' :
+    currentF === '5stars' ? '⭐ خمس نجوم (' + list.length + ')' :
+    currentF + ' (' + list.length + ')';
+
+  const grid = document.getElementById('grid');
+  if (!list.length) {
+    grid.innerHTML = '<div class="empty"><div class="ei">🍽️</div><h3>ما في وصفات هنا</h3><p>ابدأوا بإضافة أول أكلة!</p></div>';
+    return;
+  }
+  grid.innerHTML = list.map(r => {
+    const st = '★'.repeat(r.rating||0) + '☆'.repeat(5-(r.rating||0));
+    const imgEl = r.image ? '<img src="' + r.image + '" alt="' + r.name + '" loading="lazy">' : '';
+    return '<div class="card" onclick="openView(\'' + r.id + '\')">' +
+      '<div class="card-img">' + catEmoji(r.category) + imgEl +
+      '<span class="card-badge">' + (r.category||'أخرى') + '</span>' +
+      (r.rating===5 ? '<span class="card-5">★★★★★</span>' : '') +
+      '</div><div class="card-body">' +
+      '<div class="card-name">' + r.name + '</div>' +
+      (r.ingredients ? '<div class="card-prev">' + r.ingredients + '</div>' : '') +
+      '<div class="card-foot"><span class="stars">' + st + '</span><span>' + (r.date||'') + '</span></div>' +
+      '</div></div>';
+  }).join('');
+}
+
+function updateStats() {
+  document.getElementById('sTotal').textContent = recipes.length;
+  document.getElementById('sFive').textContent = recipes.filter(r=>r.rating===5).length;
+  document.getElementById('sCats').textContent = new Set(recipes.map(r=>r.category)).size;
+}
+
+function catEmoji(c) {
+  var m = {'عراقي':'🍖','عربي':'🥘','غربي':'🍝','حلويات':'🍰','مشاوي':'🔥'};
+  return m[c] || '🍽️';
+}
+
+// ====== FILTER ======
+function setF(f, btn) {
+  currentF = f;
+  document.querySelectorAll('.chip').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+// ====== VIEW ======
+function openView(id) {
+  const r = recipes.find(x => x.id === id);
+  if (!r) return;
+  editId = id;
+  document.getElementById('vTitle').textContent = r.name;
+  const st = '★'.repeat(r.rating||0) + '☆'.repeat(5-(r.rating||0));
+  let html = '';
+  if (r.image) html += '<img src="' + r.image + '" class="v-img">';
+  html += '<div class="v-meta"><span class="v-badge">' + r.category + '</span><span class="v-stars">' + st + '</span><span class="v-date">' + (r.date||'') + '</span></div>';
+  if (r.ingredients) html += '<div class="v-sec"><div class="v-sec-t">المكونات</div><div class="v-sec-b">' + r.ingredients + '</div></div>';
+  if (r.steps) html += '<div class="v-sec"><div class="v-sec-t">طريقة التحضير</div><div class="v-sec-b">' + r.steps + '</div></div>';
+  if (r.notes) html += '<div class="v-sec"><div class="v-sec-t">ملاحظاتنا ✨</div><div class="v-notes">' + r.notes + '</div></div>';
+  document.getElementById('vBody').innerHTML = html;
+  const foot = document.getElementById('vFoot');
+  if (isAdmin) {
+    foot.innerHTML = '<button class="btn-del" onclick="delRecipe()">حذف</button><button class="btn-cnl" onclick="closeAll()">إغلاق</button><button class="btn-save" onclick="openEdit()">✏️ تعديل</button>';
+  } else {
+    foot.innerHTML = '<button class="btn-cnl" onclick="closeAll()">إغلاق</button>';
+  }
+  document.getElementById('viewOv').classList.add('open');
+}
+
+function openEdit() {
+  const r = recipes.find(x => x.id === editId);
+  if (!r) return;
+  closeAll();
+  setTimeout(function() {
+    document.getElementById('addTitle').textContent = 'تعديل الوصفة';
+    document.getElementById('fName').value = r.name||'';
+    document.getElementById('fCat').value = r.category||'عراقي';
+    document.getElementById('fIng').value = r.ingredients||'';
+    document.getElementById('fSteps').value = r.steps||'';
+    document.getElementById('fNotes').value = r.notes||'';
+    currentRating = r.rating||0;
+    updateSP();
+    imgBase64 = r.image||null;
+    if (imgBase64) { document.getElementById('prevImg').src = imgBase64; document.getElementById('prevWrap').style.display='block'; }
+    else { document.getElementById('prevWrap').style.display='none'; }
+    document.getElementById('btnDel').style.display='inline-block';
+    document.getElementById('btnSave').disabled=false;
+    document.getElementById('btnSave').textContent='💾 حفظ';
+    document.getElementById('addOv').classList.add('open');
+  }, 200);
+}
+
+// ====== ADD ======
+function openAdd() {
+  editId = null;
+  document.getElementById('addTitle').textContent = 'وصفة جديدة';
+  document.getElementById('fName').value = '';
+  document.getElementById('fCat').value = 'عراقي';
+  document.getElementById('fIng').value = '';
+  document.getElementById('fSteps').value = '';
+  document.getElementById('fNotes').value = '';
+  currentRating = 0;
+  updateSP();
+  imgBase64 = null;
+  document.getElementById('fImg').value = '';
+  document.getElementById('prevWrap').style.display='none';
+  document.getElementById('btnDel').style.display='none';
+  document.getElementById('btnSave').disabled=false;
+  document.getElementById('btnSave').textContent='💾 حفظ';
+  document.getElementById('addOv').classList.add('open');
+}
+
+// ====== SAVE ======
+async function saveRecipe() {
+  const name = document.getElementById('fName').value.trim();
+  if (!name) { alert('اكتب اسم الأكلة أولاً'); return; }
+  const btn = document.getElementById('btnSave');
+  btn.disabled = true;
+  btn.textContent = '...يحفظ';
+  const data = {
+    name: name,
+    category: document.getElementById('fCat').value,
+    ingredients: document.getElementById('fIng').value.trim(),
+    steps: document.getElementById('fSteps').value.trim(),
+    notes: document.getElementById('fNotes').value.trim(),
+    rating: currentRating,
+    image: imgBase64 || null,
+    date: new Date().toLocaleDateString('ar-IQ'),
+    ts: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  try {
+    if (editId) {
+      await db.collection('recipes').doc(editId).update(data);
+    } else {
+      await db.collection('recipes').add(data);
+    }
+    closeAll();
+  } catch(e) {
+    alert('خطأ في الحفظ:\n' + e.message);
+    btn.disabled = false;
+    btn.textContent = '💾 حفظ';
+  }
+}
+
+// ====== DELETE ======
+async function delRecipe() {
+  if (!editId) return;
+  if (!confirm('تريد تحذف هاي الوصفة؟')) return;
+  try {
+    await db.collection('recipes').doc(editId).delete();
+    closeAll();
+  } catch(e) { alert('خطأ في الحذف: ' + e.message); }
+}
+
+// ====== IMAGE (Base64 + Compress) ======
+function pickImg(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = new Image();
+    img.onload = function() {
+      const MAX = 800;
+      let w = img.width, h = img.height;
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+        else { w = Math.round(w * MAX / h); h = MAX; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      imgBase64 = canvas.toDataURL('image/jpeg', 0.75);
+      document.getElementById('prevImg').src = imgBase64;
+      document.getElementById('prevWrap').style.display = 'block';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImg(e) {
+  e.stopPropagation();
+  imgBase64 = null;
+  document.getElementById('fImg').value = '';
+  document.getElementById('prevWrap').style.display = 'none';
+}
+
+// ====== STARS ======
+function rate(n) { currentRating = n; updateSP(); }
+function updateSP() {
+  document.querySelectorAll('#sp button').forEach(function(b,i){ b.classList.toggle('on', i < currentRating); });
+}
+
+// ====== LOGIN ======
+function clickLogin() {
+  if (isAdmin) {
+    isAdmin = false;
+    document.getElementById('btnAdd').style.display = 'none';
+    document.getElementById('btnLogin').textContent = 'دخول';
+    document.getElementById('btnLogin').style.color = '';
+  } else {
+    [0,1,2,3].forEach(function(i){ document.getElementById('p'+i).value=''; });
+    document.getElementById('pErr').style.display = 'none';
+    document.getElementById('loginOv').classList.add('open');
+    setTimeout(function(){ document.getElementById('p0').focus(); }, 100);
+  }
+}
+
+function pNext(i) {
+  const el = document.getElementById('p' + i);
+  if (el.value.length === 1 && i < 3) document.getElementById('p' + (i+1)).focus();
+  if (i === 3 && el.value.length === 1) checkPin();
+}
+
+function checkPin() {
+  const entered = [0,1,2,3].map(function(i){ return document.getElementById('p'+i).value; }).join('');
+  if (entered === PIN) {
+    isAdmin = true;
+    document.getElementById('btnAdd').style.display = 'inline-block';
+    document.getElementById('btnLogin').textContent = 'خروج 🔓';
+    document.getElementById('btnLogin').style.color = '#e8b55a';
+    closeAll();
+  } else {
+    document.getElementById('pErr').style.display = 'block';
+    [0,1,2,3].forEach(function(i){ document.getElementById('p'+i).value=''; });
+    document.getElementById('p0').focus();
+  }
+}
+
+// ====== UTILS ======
+function closeAll() {
+  document.querySelectorAll('.ov').forEach(function(o){ o.classList.remove('open'); });
+}
+document.querySelectorAll('.ov').forEach(function(o){
+  o.addEventListener('click', function(e){ if(e.target===o) closeAll(); });
+});
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeAll(); });
+
+// ====== START ======
+loadRecipes();
+</script>
+</body>
+</html>
